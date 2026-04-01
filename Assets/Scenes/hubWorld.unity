@@ -2196,6 +2196,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1207344271}
   - component: {fileID: 1207344270}
+  - component: {fileID: 1207344272}
   m_Layer: 0
   m_Name: LevelLoader
   m_TagString: Untagged
@@ -2222,8 +2223,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.754303, y: 10.526319, z: 12.42205}
-  m_Center: {x: -0.12284851, y: 4.7631593, z: 3.499607}
+  m_Size: {x: 7.9499626, y: 10.526319, z: 12.42205}
+  m_Center: {x: 3.4749813, y: 4.7631593, z: 3.499607}
 --- !u!4 &1207344271
 Transform:
   m_ObjectHideFlags: 0
@@ -2239,6 +2240,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1207344272
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1207344269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b74fa7ca9461f414aad1f542425dcb6b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::toyBoxLoader
 --- !u!1 &1226221072
 GameObject:
   m_ObjectHideFlags: 0
