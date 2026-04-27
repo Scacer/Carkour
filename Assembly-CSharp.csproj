@@ -62,6 +62,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\Controls\CarController.cs" />
+    <Compile Include="Assets\Scripts\UI\mainMenu.cs" />
     <Compile Include="Assets\Scripts\Controls\InputSystem_Actions.cs" />
     <Compile Include="Assets\Scripts\Loading Zones\toyBox Loader.cs" />
     <Compile Include="Assets\Scripts\Controls\ThirdPersonCameraController.cs" />
