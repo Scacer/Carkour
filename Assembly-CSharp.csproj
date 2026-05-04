@@ -61,15 +61,15 @@
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\6000.2.13f1\Editor\Data\Tools\Unity.SourceGenerators\Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\Scripts\Controls\CarController.cs" />
-    <Compile Include="Assets\Scripts\UI\mainMenu.cs" />
-    <Compile Include="Assets\Scripts\Controls\InputSystem_Actions.cs" />
-    <Compile Include="Assets\Scripts\Loading Zones\toyBox Loader.cs" />
-    <Compile Include="Assets\Scripts\Triggers\startLine.cs" />
-    <Compile Include="Assets\Scripts\UI\raceTimer.cs" />
-    <Compile Include="Assets\Scripts\Controls\ThirdPersonCameraController.cs" />
-    <Compile Include="Assets\Scripts\UI\CollectibleCount.cs" />
-    <Compile Include="Assets\Scripts\Collectibles\Collectible.cs" />
+    <Compile Include="Assets\First Party\Scripts\UI\mainMenu.cs" />
+    <Compile Include="Assets\First Party\Scripts\Triggers\startLine.cs" />
+    <Compile Include="Assets\First Party\Scripts\Controls\InputSystem_Actions.cs" />
+    <Compile Include="Assets\First Party\Scripts\Controls\CarController.cs" />
+    <Compile Include="Assets\First Party\Scripts\Collectibles\Collectible.cs" />
+    <Compile Include="Assets\First Party\Scripts\Controls\ThirdPersonCameraController.cs" />
+    <Compile Include="Assets\First Party\Scripts\UI\CollectibleCount.cs" />
+    <Compile Include="Assets\First Party\Scripts\UI\raceTimer.cs" />
+    <Compile Include="Assets\First Party\Scripts\Loading Zones\toyBox Loader.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />

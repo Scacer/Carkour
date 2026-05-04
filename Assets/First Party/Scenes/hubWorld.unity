@@ -2444,6 +2444,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4167985245368723142, guid: 214952dcbf34cc642ae2e0301f4d2baf, type: 3}
   m_PrefabInstance: {fileID: 1343664627}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1205164880 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5513877994378456017, guid: 87589d6c8b7e7d1438f0c5fd8a2ff2cd, type: 3}
+  m_PrefabInstance: {fileID: 5763788196665724899}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1207344269
 GameObject:
   m_ObjectHideFlags: 0
@@ -2881,6 +2886,11 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1226221072}
   m_CullTransparentMesh: 1
+--- !u!1 &1269602774 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6570990213576342055, guid: 87589d6c8b7e7d1438f0c5fd8a2ff2cd, type: 3}
+  m_PrefabInstance: {fileID: 5763788196665724899}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &1276539471 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8206393780791148591, guid: 90c39d39c7904474ea2554288d4018da, type: 3}
@@ -4551,6 +4561,34 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 511250146094265511, guid: 87589d6c8b7e7d1438f0c5fd8a2ff2cd, type: 3}
+      propertyPath: maxSteeringAngle
+      value: 60
+      objectReference: {fileID: 0}
+    - target: {fileID: 511250146094265511, guid: 87589d6c8b7e7d1438f0c5fd8a2ff2cd, type: 3}
+      propertyPath: 'frontTireParents.Array.data[0]'
+      value: 
+      objectReference: {fileID: 1269602774}
+    - target: {fileID: 511250146094265511, guid: 87589d6c8b7e7d1438f0c5fd8a2ff2cd, type: 3}
+      propertyPath: 'frontTireParents.Array.data[1]'
+      value: 
+      objectReference: {fileID: 1205164880}
+    - target: {fileID: 1936919846993757605, guid: 87589d6c8b7e7d1438f0c5fd8a2ff2cd, type: 3}
+      propertyPath: m_Size.y
+      value: 1.8330212
+      objectReference: {fileID: 0}
+    - target: {fileID: 1936919846993757605, guid: 87589d6c8b7e7d1438f0c5fd8a2ff2cd, type: 3}
+      propertyPath: m_Size.z
+      value: 4.202641
+      objectReference: {fileID: 0}
+    - target: {fileID: 1936919846993757605, guid: 87589d6c8b7e7d1438f0c5fd8a2ff2cd, type: 3}
+      propertyPath: m_Center.y
+      value: 1.2163107
+      objectReference: {fileID: 0}
+    - target: {fileID: 1936919846993757605, guid: 87589d6c8b7e7d1438f0c5fd8a2ff2cd, type: 3}
+      propertyPath: m_Center.z
+      value: -0.19374037
+      objectReference: {fileID: 0}
     - target: {fileID: 3630987273492161801, guid: 87589d6c8b7e7d1438f0c5fd8a2ff2cd, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0

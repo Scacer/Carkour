@@ -1,5 +1,6 @@
 using NUnit.Framework.Constraints;
 using System;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -12,6 +13,7 @@ public class CarController : MonoBehaviour
     [SerializeField] private LayerMask drivable;
     [SerializeField] private Transform accelerationPoint;
     [SerializeField] private GameObject[] tires = new GameObject[4];
+    [SerializeField] private GameObject[] frontTireParents = new GameObject[2];
 
     [Header("Suspension Settings")]
     [SerializeField] private float damperStiffness; // Value used to represent damper fluid to prevent continuous bouncing
@@ -43,6 +45,11 @@ public class CarController : MonoBehaviour
     private int[] wheelsIsGrounded = new int[4];
     private bool isGrounded = false;
 
+    [Header("Wall Riding")]
+    [SerializeField] private LayerMask ridableWall;
+    private int[] wheelsOnWall = new int[4];
+    private bool isWallRiding = false;
+
     [Header("Input")]
     private float moveInput = 0;
     private float steerInput = 0;
@@ -52,6 +59,7 @@ public class CarController : MonoBehaviour
     // Visuals
     [Header("Visuals")]
     [SerializeField] private float tireRotSpeed = 3000f;
+    [SerializeField] private float maxSteeringAngle = 30f;
 
     #region Unity Functions
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -77,12 +85,14 @@ public class CarController : MonoBehaviour
     private void Update()
     {
         GetPlayerInput();
+        Visuals();
     }
 
     private void FixedUpdate()
     {
         Suspension();
         GroundCheck();
+        WallCheck();
         CalculateCarVelocity();
         Movement();
         Visuals();
@@ -128,10 +138,29 @@ public class CarController : MonoBehaviour
 
                 Debug.DrawLine(rayPoint.position, hit.point, Color.red);
             }
+            else if (Physics.Raycast(rayPoint.position, -rayPoint.up, out hit, maxLength + wheelRadius, ridableWall))
+            {
+                wheelsOnWall[i] = 1;
+
+                // Here the suspension code needs to be altered
+                float currentSpringLength = hit.distance - wheelRadius;
+                float springCompression = restLength - currentSpringLength / springTravel;
+
+                float springVelocity = Vector3.Dot(carRB.GetPointVelocity(rayPoint.position), rayPoint.up);
+                float dampForce = damperStiffness * springVelocity;
+
+                float springForce = springStiffness * springCompression;
+
+                float netForce = springForce - dampForce;
+
+                carRB.AddForceAtPosition(netForce * rayPoint.up, rayPoint.position);
+                carRB.AddForceAtPosition(200 * -rayPoint.up, rayPoint.position);
+            }
             else
             {
                 // If the raycast does NOT hit the ground, the wheel is NOT grounded
                 wheelsIsGrounded[i] = 0;
+                wheelsOnWall[i] = 0;
 
                 // Visuals
                 SetTirePosition(tires[i], rayPoint.position - rayPoint.up * maxLength);
@@ -166,6 +195,29 @@ public class CarController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// WallCheck() ensures that if we are riding on a wall
+    /// </summary>
+    private void WallCheck()
+    {
+        int tempWallRidingWheels = 0;
+
+        for (int i = 0; i < wheelsOnWall.Length; i++)
+        {
+            tempWallRidingWheels += wheelsOnWall[i];
+        }
+
+        if(tempWallRidingWheels > 1)
+        {
+            isWallRiding = true;
+        }
+        else
+        {
+            isWallRiding = false;
+        }
+        Debug.Log(isWallRiding);
+    }
+
     private void CalculateCarVelocity()
     {
         currentCarLocalVelocity = transform.InverseTransformDirection(carRB.linearVelocity);
@@ -178,7 +230,7 @@ public class CarController : MonoBehaviour
 
     private void Movement()
     {
-        if (isGrounded)
+        if (isGrounded || isWallRiding)
         {
             Acceleration();
             Deceleration();
@@ -240,7 +292,14 @@ public class CarController : MonoBehaviour
     {
         if (jump.IsPressed())
         {
-            carRB.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            if (isGrounded)
+            {
+                carRB.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            }
+            else if (isWallRiding)
+            {
+                carRB.useGravity = true;
+            }
         }
     }
 
@@ -295,11 +354,18 @@ public class CarController : MonoBehaviour
 
     private void TireVisuals()
     {
+        float steerAngle = maxSteeringAngle * moveDirection.x;
+
         for (int i = 0; i < tires.Length; i++)
         {
             if (i < 2)
             {
                 tires[i].transform.Rotate(Vector3.right, tireRotSpeed * carVelocityRatio * Time.deltaTime, Space.Self);
+
+                // Steering code
+                frontTireParents[i].transform.localEulerAngles = new Vector3(0, steerAngle, 0);
+
+                
             }
             else
             {
