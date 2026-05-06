@@ -6,10 +6,13 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/hubWorld.unity
+    path: Assets/First Party/Scenes/mainMenu.unity
+    guid: a1471eecb0e19934ba7ade128374e333
+  - enabled: 1
+    path: Assets/First Party/Scenes/hubWorld.unity
     guid: 9fc0d4010bbf28b4594072e72b8655ab
   - enabled: 1
-    path: Assets/Scenes/Toybox.unity
+    path: Assets/First Party/Scenes/Toybox.unity
     guid: abb7dd0dd07d42b4bb3666db7870c8d9
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 289c1b55c9541489481df5cc06664110, type: 3}
