@@ -337,8 +337,15 @@ public class CarController : MonoBehaviour
         // steerStrength determines how sharply the car turns, steerInput is between -1 and 1 (-ve turns left, +ve turns right)
         // turningCurve evaluates the turn strength on a curve, Mathf.Sign checks if the car is moving backwards or forwards
         // transform.up ensures the car is rotated vertically, and ForceMode is acceleration ensuring torque is applied independent of car mass.
-
-        carRB.AddTorque(steerStrength * moveDirection.x * turningCurve.Evaluate(carVelocityRatio) * Mathf.Sign(carVelocityRatio) * transform.up, ForceMode.Acceleration);
+        if (moveDirection.y > 0)
+        {
+            carRB.AddTorque(steerStrength * moveDirection.x * turningCurve.Evaluate(carVelocityRatio) * Mathf.Sign(carVelocityRatio) * transform.up, ForceMode.Acceleration);
+        }
+        else if (moveDirection.y < 0)
+        {
+            carRB.AddTorque(steerStrength * moveDirection.x * turningCurve.Evaluate(-carVelocityRatio) * Mathf.Sign(carVelocityRatio) * transform.up, ForceMode.Acceleration);
+        }
+        
     }
 
     private void SidewaysDrag()
