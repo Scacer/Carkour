@@ -1,0 +1,3 @@
+- Magnet which allows you to ride on walls
+- Momentum carries slightly when letting go of air controls
+	- Rotation speed should start slow and ramp up

@@ -1,12 +1,5 @@
 fileFormatVersion: 2
-guid: c1cc64e7bc0dc7249a201b71e40972c1
-AssetOrigin:
-  serializedVersion: 1
-  productId: 36106
-  packageName: Mobile Power Ups Free Vol.1
-  packageVersion: 1.05
-  assetPath: Assets/PowerUps Vol 1 Free/Textures/Arrows Green.tga
-  uploadId: 644006
+guid: 1050e38adccae9144814476ef7e979b6
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -37,8 +30,8 @@ TextureImporter:
   generateCubemap: 6
   cubemapConvolution: 0
   seamlessCubemap: 0
-  textureFormat: -1
-  maxTextureSize: 1024
+  textureFormat: 1
+  maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
     filterMode: 1
@@ -70,13 +63,13 @@ TextureImporter:
   compressionQualitySet: 0
   textureFormatSet: 0
   ignorePngGamma: 0
-  applyGammaDecoding: 1
+  applyGammaDecoding: 0
   swizzle: 50462976
-  cookieLightType: 1
+  cookieLightType: 0
   platformSettings:
   - serializedVersion: 4
     buildTarget: DefaultTexturePlatform
-    maxTextureSize: 1024
+    maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
     textureCompression: 1
@@ -89,7 +82,7 @@ TextureImporter:
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 4
     buildTarget: Standalone
-    maxTextureSize: 1024
+    maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
     textureCompression: 1

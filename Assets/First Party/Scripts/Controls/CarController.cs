@@ -34,10 +34,24 @@ public class CarController : MonoBehaviour
     [Header("Air Control Settings")]
     [SerializeField] private float rollRotationSpeed = 200f;
     [SerializeField] private float jumpForce = 10f;
+    private float jumpProtection = 0f;
     [SerializeField] private float yawpitchRotationSpeed = 200f;
+    [SerializeField] private float rotationTorqueSpeed = 10f;
+    [SerializeField] private float angularVelocity = 500f;
     [SerializeField] InputAction jump;
     [SerializeField] InputAction rotate;
     private bool jumpIsPossible = false;
+
+    // Powerups
+    public enum Powerup 
+    { 
+        NONE,
+        JUMPBOOST,
+        MAGNET,
+        SPEEDBOOST
+    }
+    public Powerup[] items = new Powerup[2];
+
 
     private Vector3 currentCarLocalVelocity = Vector3.zero;
     private float carVelocityRatio = 0;
@@ -66,6 +80,10 @@ public class CarController : MonoBehaviour
     void Start()
     {
         carRB = GetComponent<Rigidbody>();
+        carRB.maxAngularVelocity = angularVelocity;
+        jumpProtection = Time.time;
+        items[0] = Powerup.NONE;
+        items[1] = Powerup.NONE;
     }
 
     private void OnEnable()
@@ -220,7 +238,7 @@ public class CarController : MonoBehaviour
         {
             isWallRiding = false;
         }
-        Debug.Log(isWallRiding);
+        //Debug.Log(isGrounded);
     }
 
     private void CalculateCarVelocity()
@@ -259,13 +277,25 @@ public class CarController : MonoBehaviour
     private void carRotation()
     {
         float rotation = rotate.ReadValue<float>();
-        if (rotation < 0)
+        // If rotation is +ve, turn right
+        if (rotation > 0)
         {
-            carRB.transform.Rotate(Vector3.back, rotation * rollRotationSpeed * Time.deltaTime);
+            // Apply torque backwards (-frwd) at defined rotation speed
+            Vector3 appliedTorque = -transform.forward * rotationTorqueSpeed;
+            // ForceMode Acceleration ensures a more drift-car feel
+            carRB.AddTorque(appliedTorque, ForceMode.Acceleration);
+
+            //carRB.transform.Rotate(Vector3.back, rotation * rollRotationSpeed * Time.deltaTime); - LEGACY
         }
-        else if (rotation > 0)
+        // If rotation is -ve, turn left
+        else if (rotation < 0)
         {
-            carRB.transform.Rotate(Vector3.forward, -rotation * rollRotationSpeed * Time.deltaTime);
+            // Apply torque backwards (-frwd) at defined rotation speed
+            Vector3 appliedTorque = transform.forward * rotationTorqueSpeed;
+            // ForceMode Acceleration ensures a more drift-car feel
+            carRB.AddTorque(appliedTorque, ForceMode.Acceleration);
+
+            //carRB.transform.Rotate(Vector3.forward, -rotation * rollRotationSpeed * Time.deltaTime); - LEGACY
         }
     }
 
@@ -276,20 +306,28 @@ public class CarController : MonoBehaviour
 
         if (moveY > 0)
         {
-            carRB.transform.Rotate(Vector3.right, yawpitchRotationSpeed * Time.deltaTime);
+            Vector3 appliedTorque = transform.right * rotationTorqueSpeed;
+            carRB.AddTorque(appliedTorque, ForceMode.Acceleration);
+            //carRB.transform.Rotate(Vector3.right, yawpitchRotationSpeed * Time.deltaTime);
         }
         else if (moveY < 0)
         {
-            carRB.transform.Rotate(Vector3.left, yawpitchRotationSpeed * Time.deltaTime);
+            Vector3 appliedTorque = -transform.right * rotationTorqueSpeed;
+            carRB.AddTorque(appliedTorque, ForceMode.Acceleration);
+            //carRB.transform.Rotate(Vector3.left, yawpitchRotationSpeed * Time.deltaTime);
         }
 
         if (moveX > 0)
         {
-            carRB.transform.Rotate(Vector3.up, yawpitchRotationSpeed * Time.deltaTime);
+            Vector3 appliedTorque = transform.up * rotationTorqueSpeed;
+            carRB.AddTorque(appliedTorque, ForceMode.Acceleration);
+            //carRB.transform.Rotate(Vector3.up, yawpitchRotationSpeed * Time.deltaTime);
         }
         else if (moveX < 0)
         {
-            carRB.transform.Rotate(Vector3.down, yawpitchRotationSpeed * Time.deltaTime);
+            Vector3 appliedTorque = -transform.up * rotationTorqueSpeed;
+            carRB.AddTorque(appliedTorque, ForceMode.Acceleration);
+            //carRB.transform.Rotate(Vector3.down, yawpitchRotationSpeed * Time.deltaTime);
         }
     }
 
@@ -298,7 +336,7 @@ public class CarController : MonoBehaviour
         if (jump.IsPressed())
         {
             if (isGrounded)
-            {
+            {               
                 carRB.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
             }
             else if (isWallRiding)
@@ -337,11 +375,11 @@ public class CarController : MonoBehaviour
         // steerStrength determines how sharply the car turns, steerInput is between -1 and 1 (-ve turns left, +ve turns right)
         // turningCurve evaluates the turn strength on a curve, Mathf.Sign checks if the car is moving backwards or forwards
         // transform.up ensures the car is rotated vertically, and ForceMode is acceleration ensuring torque is applied independent of car mass.
-        if (moveDirection.y > 0)
+        if (moveDirection.y > 0 || carVelocityRatio > 0)
         {
             carRB.AddTorque(steerStrength * moveDirection.x * turningCurve.Evaluate(carVelocityRatio) * Mathf.Sign(carVelocityRatio) * transform.up, ForceMode.Acceleration);
         }
-        else if (moveDirection.y < 0)
+        else if (moveDirection.y < 0 || carVelocityRatio < 0)
         {
             carRB.AddTorque(steerStrength * moveDirection.x * turningCurve.Evaluate(-carVelocityRatio) * Mathf.Sign(carVelocityRatio) * transform.up, ForceMode.Acceleration);
         }
