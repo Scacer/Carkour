@@ -22,6 +22,7 @@ public class CarController : MonoBehaviour
     [SerializeField] private float springTravel; // The maximum distances the spring can either compress or extend from rest
     [SerializeField] private float wheelRadius;
 
+    #region Movement Attributes
     // Movement
     [Header("Car Settings")]
     [SerializeField] private float acceleration = 25f;
@@ -30,19 +31,24 @@ public class CarController : MonoBehaviour
     [SerializeField] private float steerStrength = 15f;
     [SerializeField] private AnimationCurve turningCurve;
     [SerializeField] private float dragCoefficient = 1f;
+    #endregion
 
+    #region Air Control Attributes
     [Header("Air Control Settings")]
     [SerializeField] private float rollRotationSpeed = 200f;
-    [SerializeField] private float jumpForce = 10f;
+    [SerializeField] private float jumpForce = 31000f;
     private float jumpProtection = 0f;
     [SerializeField] private float yawpitchRotationSpeed = 200f;
     [SerializeField] private float rotationTorqueSpeed = 10f;
     [SerializeField] private float angularVelocity = 500f;
     [SerializeField] InputAction jump;
     [SerializeField] InputAction rotate;
-    private bool jumpIsPossible = false;
+    private bool justJumped = false;
+    private float sinceJumped = 0f;
+    private float jumpBuffer = 0.5f;
+    #endregion
 
-    // Powerups
+    #region Powerup Attributes
     public enum Powerup 
     { 
         NONE,
@@ -50,7 +56,18 @@ public class CarController : MonoBehaviour
         MAGNET,
         SPEEDBOOST
     }
-    public Powerup[] items = new Powerup[2];
+    public Powerup[] collectedItems = new Powerup[2];
+
+    public static event Action itemCollected;
+    public static event Action itemUsed;
+    public static event Action wallRideBegin;
+    private bool magnetised;
+
+    public float magnetDuration = 3f;
+    private float magnetTimer = 0f;
+    private int[] magnetisedWheels = new int[4];
+    private bool wallAttraction = false;
+    #endregion
 
 
     private Vector3 currentCarLocalVelocity = Vector3.zero;
@@ -65,8 +82,6 @@ public class CarController : MonoBehaviour
     private bool isWallRiding = false;
 
     [Header("Input")]
-    private float moveInput = 0;
-    private float steerInput = 0;
     [SerializeField] private InputAction playerControls;
     Vector2 moveDirection = Vector2.zero;
 
@@ -82,8 +97,9 @@ public class CarController : MonoBehaviour
         carRB = GetComponent<Rigidbody>();
         carRB.maxAngularVelocity = angularVelocity;
         jumpProtection = Time.time;
-        items[0] = Powerup.NONE;
-        items[1] = Powerup.NONE;
+        magnetised = false;
+        collectedItems[0] = Powerup.NONE;
+        collectedItems[1] = Powerup.NONE;
     }
 
     private void OnEnable()
@@ -91,6 +107,10 @@ public class CarController : MonoBehaviour
         playerControls.Enable();
         jump.Enable();
         rotate.Enable();
+
+        // Item Collection
+        GachaItem.DoubleJumpCollected += ()=>CollectItem(Powerup.JUMPBOOST);
+        GachaItem.MagnetCollected += () => CollectItem(Powerup.MAGNET);
     }
 
     private void OnDisable()
@@ -156,9 +176,26 @@ public class CarController : MonoBehaviour
 
                 Debug.DrawLine(rayPoint.position, hit.point, Color.red);
             }
-            else if (Physics.Raycast(rayPoint.position, -rayPoint.up, out hit, maxLength + wheelRadius, ridableWall))
+            // Shoots "magnetism" raypoints, these are slightly longer and will cause the car to pull towards a wall
+            else if (Physics.Raycast(rayPoint.position, -rayPoint.up, out hit, maxLength + wheelRadius, ridableWall) && collectedItems[0] == Powerup.MAGNET)
             {
-                wheelsOnWall[i] = 1;
+                RaycastHit magnetiseHit;
+                if(Physics.Raycast(rayPoint.position, -rayPoint.up, out magnetiseHit, 2*maxLength + wheelRadius, ridableWall))
+                {
+                    magnetisedWheels[i] = 1;
+                    if (wallAttraction && !magnetised)
+                    {
+                        carRB.AddForceAtPosition(350 * -rayPoint.up, rayPoint.position);
+                    }
+                }
+                // Detects when the player magnetises to a wall
+                if (!magnetised)
+                {
+                    magnetised = true;
+                    magnetTimer = Time.time;
+                    wallRideBegin?.Invoke();
+                }
+                    wheelsOnWall[i] = 1;
 
                 // Here the suspension code needs to be altered
                 float currentSpringLength = hit.distance - wheelRadius;
@@ -190,6 +227,21 @@ public class CarController : MonoBehaviour
 
                 Debug.DrawLine(rayPoint.position, rayPoint.position + (wheelRadius + maxLength) * -rayPoint.up, Color.green);
             }
+
+            // Allows for wall riding for the specified duration, detaching the player when the powerup runs out
+            if (Time.time - magnetTimer > magnetDuration && magnetTimer != 0f)
+            {
+                UseItem();
+                magnetised = false;
+                magnetTimer = 0f;
+                // Pushes the car lightly off the wall if attached
+                if (isWallRiding)
+                {
+                    float releaseStrength = 0.3f * jumpForce;
+                    carRB.AddForce(carRB.transform.up * releaseStrength, ForceMode.Impulse);
+                    carRB.AddForce(Vector3.up * releaseStrength, ForceMode.Impulse);
+                }  
+            }
         }
     }
     #endregion
@@ -208,7 +260,7 @@ public class CarController : MonoBehaviour
             tempGroundedWheels += wheelsIsGrounded[i];
         }
 
-        if (tempGroundedWheels > 1)
+        if (tempGroundedWheels > 2)
         {
             isGrounded = true;
         }
@@ -224,19 +276,30 @@ public class CarController : MonoBehaviour
     private void WallCheck()
     {
         int tempWallRidingWheels = 0;
+        int tempMagnetisedWheels = 0;
 
         for (int i = 0; i < wheelsOnWall.Length; i++)
         {
             tempWallRidingWheels += wheelsOnWall[i];
+            tempMagnetisedWheels += magnetisedWheels[i];
         }
 
-        if(tempWallRidingWheels > 1)
+        if(tempWallRidingWheels > 2)
         {
             isWallRiding = true;
         }
         else
         {
             isWallRiding = false;
+        }
+
+        if (tempMagnetisedWheels > 2)
+        {
+            wallAttraction = true;
+        }
+        else
+        {
+            wallAttraction = false;
         }
         //Debug.Log(isGrounded);
     }
@@ -264,6 +327,10 @@ public class CarController : MonoBehaviour
         else
         {
             AirborneControls();
+        }
+        if (collectedItems[0] == Powerup.JUMPBOOST)
+        {
+            HandleJump();
         }
 
     }
@@ -335,16 +402,36 @@ public class CarController : MonoBehaviour
     {
         if (jump.IsPressed())
         {
-            if (isGrounded)
-            {               
-                carRB.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-            }
-            else if (isWallRiding)
+            
+
+            if (sinceJumped == 0f)
             {
-                float upForce = (float)0.3 * jumpForce;
-                carRB.AddForce(carRB.transform.up * jumpForce, ForceMode.Impulse);
-                carRB.AddForce(Vector3.up * upForce, ForceMode.Impulse);
+                if (collectedItems[0] == Powerup.JUMPBOOST && !isGrounded)
+                {
+                    // Powerup jump should be slightly stronger, as the player is already airborne and may want to alter their trajectory
+                    float powerJumpForce = jumpForce * 0.7f;
+                    // Using "transform.up" here instead of "Vector3.up" ensures that the player can alter their jump trajectory with the powerup
+                    carRB.AddForce(transform.up * powerJumpForce, ForceMode.Impulse);
+                    UseItem();
+                }
+                else if (isGrounded)
+                {
+                    carRB.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+                    justJumped = true;
+                }
+                else if (isWallRiding)
+                {
+                    float upForce = (float)0.3 * jumpForce;
+                    carRB.AddForce(carRB.transform.up * jumpForce, ForceMode.Impulse);
+                    carRB.AddForce(Vector3.up * upForce, ForceMode.Impulse);
+                }
+                sinceJumped = Time.time;
             }
+            else if (Time.time - sinceJumped > jumpBuffer)
+            {
+                sinceJumped = 0f;
+            }
+
         }
     }
 
@@ -397,6 +484,35 @@ public class CarController : MonoBehaviour
     }
     #endregion
 
+    #region Item Handling
+    private void CollectItem(Powerup item)
+    {
+        if (collectedItems[0] == Powerup.NONE)
+        {
+            collectedItems[0] = item;
+            itemCollected?.Invoke();
+            return;
+        }
+        else if (collectedItems[1] == Powerup.NONE)
+        {
+            collectedItems[1] = item;
+            itemCollected?.Invoke();
+            return;
+        }
+    }
+
+    private void UseItem()
+    {
+        // Save the item in the second box and void it
+        Powerup tempItem = collectedItems[1];
+        collectedItems[1] = 0;
+        // Move the saved item into the first box
+        collectedItems[0] = tempItem;
+        itemUsed?.Invoke();
+    }
+
+    #endregion
+
     #region Visuals
 
     private void Visuals()
@@ -421,7 +537,7 @@ public class CarController : MonoBehaviour
             }
             else
             {
-                tires[i].transform.Rotate(Vector3.right, tireRotSpeed * moveInput * Time.deltaTime, Space.Self);
+                tires[i].transform.Rotate(Vector3.right, tireRotSpeed * moveDirection.y * Time.deltaTime, Space.Self);
             }
         }
     }
