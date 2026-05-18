@@ -64,7 +64,7 @@ Material:
     - PixelSnap: 0
     - _Angle: 0
     - _Arc1: 0
-    - _Arc2: 110
+    - _Arc2: 0
     - _BumpScale: 1
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1

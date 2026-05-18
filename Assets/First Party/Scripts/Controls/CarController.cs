@@ -35,20 +35,18 @@ public class CarController : MonoBehaviour
 
     #region Air Control Attributes
     [Header("Air Control Settings")]
-    [SerializeField] private float rollRotationSpeed = 200f;
     [SerializeField] private float jumpForce = 31000f;
-    private float jumpProtection = 0f;
-    [SerializeField] private float yawpitchRotationSpeed = 200f;
     [SerializeField] private float rotationTorqueSpeed = 10f;
     [SerializeField] private float angularVelocity = 500f;
     [SerializeField] InputAction jump;
     [SerializeField] InputAction rotate;
-    private bool justJumped = false;
     private float sinceJumped = 0f;
     private float jumpBuffer = 0.5f;
     #endregion
 
     #region Powerup Attributes
+    [SerializeField] InputAction discardItem;
+
     public enum Powerup 
     { 
         NONE,
@@ -59,8 +57,15 @@ public class CarController : MonoBehaviour
     public Powerup[] collectedItems = new Powerup[2];
 
     public static event Action itemCollected;
+    public static event Action itemDiscarded;
     public static event Action itemUsed;
+    public static event Action doubleJump;
     public static event Action wallRideBegin;
+
+    // Discard Items Logic
+    private float sinceDiscarded = 0f;
+    private float discardBuffer = 0.5f;
+    
     private bool magnetised;
 
     public float magnetDuration = 3f;
@@ -96,7 +101,6 @@ public class CarController : MonoBehaviour
     {
         carRB = GetComponent<Rigidbody>();
         carRB.maxAngularVelocity = angularVelocity;
-        jumpProtection = Time.time;
         magnetised = false;
         collectedItems[0] = Powerup.NONE;
         collectedItems[1] = Powerup.NONE;
@@ -107,6 +111,7 @@ public class CarController : MonoBehaviour
         playerControls.Enable();
         jump.Enable();
         rotate.Enable();
+        discardItem.Enable();
 
         // Item Collection
         GachaItem.DoubleJumpCollected += ()=>CollectItem(Powerup.JUMPBOOST);
@@ -118,6 +123,7 @@ public class CarController : MonoBehaviour
         playerControls.Disable();
         jump.Disable();
         rotate.Disable();
+        discardItem.Disable();
     }
 
     private void Update()
@@ -134,6 +140,7 @@ public class CarController : MonoBehaviour
         CalculateCarVelocity();
         Movement();
         Visuals();
+        DiscardItemCheck();
     }
     #endregion
 
@@ -408,16 +415,16 @@ public class CarController : MonoBehaviour
             {
                 if (collectedItems[0] == Powerup.JUMPBOOST && !isGrounded)
                 {
-                    // Powerup jump should be slightly stronger, as the player is already airborne and may want to alter their trajectory
+                    // Powerup jump should be slightly weaker
                     float powerJumpForce = jumpForce * 0.7f;
                     // Using "transform.up" here instead of "Vector3.up" ensures that the player can alter their jump trajectory with the powerup
                     carRB.AddForce(transform.up * powerJumpForce, ForceMode.Impulse);
                     UseItem();
+                    doubleJump?.Invoke();
                 }
                 else if (isGrounded)
                 {
                     carRB.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-                    justJumped = true;
                 }
                 else if (isWallRiding)
                 {
@@ -501,14 +508,36 @@ public class CarController : MonoBehaviour
         }
     }
 
-    private void UseItem()
+    private void DiscardItemCheck()
+    {
+        // This method circumnavigates activating abilities in favour of simply "using" the item
+        if (discardItem.IsPressed() && sinceDiscarded == 0f)
+        {
+            UseItem(false);
+            sinceDiscarded = Time.time;
+        }
+        else if (Time.time - sinceDiscarded > discardBuffer)
+        {
+            sinceDiscarded = 0f;
+        }
+    }
+
+    private void UseItem(bool discard = true)
     {
         // Save the item in the second box and void it
         Powerup tempItem = collectedItems[1];
         collectedItems[1] = 0;
         // Move the saved item into the first box
         collectedItems[0] = tempItem;
-        itemUsed?.Invoke();
+        if (discard)
+        {
+            itemUsed?.Invoke();
+        }
+        else
+        {
+            itemDiscarded?.Invoke();
+        }
+        
     }
 
     #endregion

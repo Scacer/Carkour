@@ -13,6 +13,8 @@ public class itemBoxHandler : MonoBehaviour
     [SerializeField] private Sprite doubleJump;
     [SerializeField] private Sprite magnet;
 
+    private CarController.Powerup[] curItems = new CarController.Powerup[2];
+
     private float magnetTimer = 0f;
 
     private Sprite[] jumpBoostDummyItems = new Sprite[2];
@@ -26,17 +28,29 @@ public class itemBoxHandler : MonoBehaviour
         loadPowerupIcons();
     }
 
+
+
     private void OnEnable()
     {
-        // Item display is managed when items are collected or used
+        // Item display is managed when items are collected, used, or discarded
         CarController.itemCollected += loadPowerupIcons;
+        CarController.itemDiscarded += discardItem;
         CarController.itemUsed += loadPowerupIcons;
 
         // Controls "flair" when jump boost is used
-        CarController.itemUsed += startJumpBoostTimer;
+        CarController.doubleJump += startJumpBoostTimer;
 
         // Controls magnet duration display
-        CarController.wallRideBegin += startMagnetTimer;    
+        CarController.wallRideBegin += startMagnetTimer;
+        
+    }
+
+    private void discardItem()
+    {
+        itemTimer.enabled = false;
+        magnetTimer = 0f;
+        jumpBoostTimer = 0f;
+        loadPowerupIcons();
     }
 
     // Update is called once per frame
@@ -54,18 +68,22 @@ public class itemBoxHandler : MonoBehaviour
         itemTimer.enabled = true;
     }
 
-    private void magnetTimerHandler()
+    private void magnetTimerHandler() // need to check each primitembox item type to prevent magnet and jump timer occurring at the same time (check for which item wen start timer)
     {
-        // If timer has been activated, animate the cooldown graphic
-        if (magnetTimer != 0f && Time.time - magnetTimer < player.magnetDuration)
+        if (curItems[0] == CarController.Powerup.MAGNET)
         {
-            itemTimer.fillAmount = 1 - (Time.time - magnetTimer)/player.magnetDuration;
-        }
-        // If the timer has exceeded the limit, set timer back to 0
-        else if (magnetTimer != 0 && Time.time - magnetTimer > player.magnetDuration)
-        {
-            magnetTimer = 0f;
-            itemTimer.enabled = false;
+            // If timer has been activated, animate the cooldown graphic
+            if (magnetTimer != 0f && Time.time - magnetTimer < player.magnetDuration)
+            {
+                itemTimer.fillAmount = 1 - (Time.time - magnetTimer) / player.magnetDuration;
+            }
+            // If the timer has exceeded the limit, set timer back to 0
+            else if (magnetTimer != 0 && Time.time - magnetTimer > player.magnetDuration)
+            {
+                magnetTimer = 0f;
+                itemTimer.enabled = false;
+                jumpBoostTimer = 0f;
+            }
         }
 
     }
@@ -77,13 +95,19 @@ public class itemBoxHandler : MonoBehaviour
 
     private void jumpBoostTimerHandler()
     {
-        if (jumpBoostTimer != 0f && Time.time - jumpBoostTimer < jumpBoostTimerDuration) {
-            Debug.Log(itemTimer.enabled);
+        if (jumpBoostTimer != 0f && Time.time - jumpBoostTimer < jumpBoostTimerDuration)
+        {
             // Prevents sprite being set every frame
             if (!primaryItemBox.enabled)
             {
                 primaryItemBox.enabled = true;
                 primaryItemBox.sprite = jumpBoostDummyItems[0];
+            }
+            // Prevents itemTimer being re-set each frame
+            else if (!itemTimer.enabled || itemTimer.fillAmount < 1)
+            {
+                itemTimer.enabled = true;
+                itemTimer.fillAmount = 1;
             }
             // Prevents sprite being set every frame
             else if (!secondaryItemBox.enabled)
@@ -116,7 +140,7 @@ public class itemBoxHandler : MonoBehaviour
         jumpBoostDummyItems[1] = secondaryItemBox.sprite;
 
         // Obtain the contents of the player's item boxes
-        CarController.Powerup[] curItems = player.collectedItems;
+        curItems = player.collectedItems;
         // First Item Box
         primaryItemBox.enabled = true; primaryItemBox.color = new Color(primaryItemBox.color.r, primaryItemBox.color.g, primaryItemBox.color.b, 1f);
         switch ((int)curItems[0])
