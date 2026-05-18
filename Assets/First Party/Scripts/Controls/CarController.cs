@@ -19,6 +19,7 @@ public class CarController : MonoBehaviour
     [SerializeField] private float damperStiffness; // Value used to represent damper fluid to prevent continuous bouncing
     [SerializeField] private float springStiffness; // The maximum force the spring can exert, occurring when fully compressed
     [SerializeField] private float restLength; // The standard length of our theoretical spring when at rest
+    private float maxLength; // Maximum length(?) consult video!!
     [SerializeField] private float springTravel; // The maximum distances the spring can either compress or extend from rest
     [SerializeField] private float wheelRadius;
 
@@ -45,6 +46,7 @@ public class CarController : MonoBehaviour
     #endregion
 
     #region Powerup Attributes
+    [SerializeField] private GameObject[] carMagnets = new GameObject[2];
     [SerializeField] InputAction discardItem;
 
     public enum Powerup 
@@ -99,11 +101,16 @@ public class CarController : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        maxLength = restLength + springTravel;
         carRB = GetComponent<Rigidbody>();
         carRB.maxAngularVelocity = angularVelocity;
         magnetised = false;
+        // Ensure item boxes are empty on load
         collectedItems[0] = Powerup.NONE;
         collectedItems[1] = Powerup.NONE;
+        // Hide visual magnets at start of the program
+        carMagnets[0].SetActive(false);
+        carMagnets[1].SetActive(false);
     }
 
     private void OnEnable()
@@ -157,7 +164,6 @@ public class CarController : MonoBehaviour
             Transform rayPoint = rayPoints[i];
 
             RaycastHit hit;
-            float maxLength = restLength + springTravel;
 
             // Shoots a raycast downwards from the rayPoint's position  
             if (Physics.Raycast(rayPoint.position, -rayPoint.up, out hit, maxLength + wheelRadius, drivable))
@@ -183,45 +189,10 @@ public class CarController : MonoBehaviour
 
                 Debug.DrawLine(rayPoint.position, hit.point, Color.red);
             }
-            // Shoots "magnetism" raypoints, these are slightly longer and will cause the car to pull towards a wall
+            // Checks for both Ridable Wall and Magnet item before applying wall riding logic
             else if (Physics.Raycast(rayPoint.position, -rayPoint.up, out hit, maxLength + wheelRadius, ridableWall) && collectedItems[0] == Powerup.MAGNET)
             {
-                RaycastHit magnetiseHit;
-                if(Physics.Raycast(rayPoint.position, -rayPoint.up, out magnetiseHit, 2*maxLength + wheelRadius, ridableWall))
-                {
-                    magnetisedWheels[i] = 1;
-                    if (wallAttraction && !magnetised)
-                    {
-                        carRB.AddForceAtPosition(350 * -rayPoint.up, rayPoint.position);
-                    }
-                }
-                // Detects when the player magnetises to a wall
-                if (!magnetised)
-                {
-                    magnetised = true;
-                    magnetTimer = Time.time;
-                    wallRideBegin?.Invoke();
-                }
-                    wheelsOnWall[i] = 1;
-
-                // Here the suspension code needs to be altered
-                float currentSpringLength = hit.distance - wheelRadius;
-                float springCompression = restLength - currentSpringLength / springTravel;
-
-                float springVelocity = Vector3.Dot(carRB.GetPointVelocity(rayPoint.position), rayPoint.up);
-                float dampForce = damperStiffness * springVelocity;
-
-                float springForce = springStiffness * springCompression;
-
-                float netForce = springForce - dampForce;
-
-                carRB.AddForceAtPosition(netForce * rayPoint.up, rayPoint.position);
-                if (isWallRiding) // If the player is wall riding, attach them to the wall and give them a small boost
-                {
-                    carRB.AddForceAtPosition(200 * -rayPoint.up, rayPoint.position);
-                    carRB.AddForceAtPosition((acceleration * moveDirection.y * transform.forward), accelerationPoint.position, ForceMode.Impulse);
-                }
-                
+                MagnetHandler(rayPoint, hit, i);          
             }
             else
             {
@@ -234,21 +205,7 @@ public class CarController : MonoBehaviour
 
                 Debug.DrawLine(rayPoint.position, rayPoint.position + (wheelRadius + maxLength) * -rayPoint.up, Color.green);
             }
-
-            // Allows for wall riding for the specified duration, detaching the player when the powerup runs out
-            if (Time.time - magnetTimer > magnetDuration && magnetTimer != 0f)
-            {
-                UseItem();
-                magnetised = false;
-                magnetTimer = 0f;
-                // Pushes the car lightly off the wall if attached
-                if (isWallRiding)
-                {
-                    float releaseStrength = 0.3f * jumpForce;
-                    carRB.AddForce(carRB.transform.up * releaseStrength, ForceMode.Impulse);
-                    carRB.AddForce(Vector3.up * releaseStrength, ForceMode.Impulse);
-                }  
-            }
+            EndMagnetCheck();
         }
     }
     #endregion
@@ -415,24 +372,21 @@ public class CarController : MonoBehaviour
             {
                 if (collectedItems[0] == Powerup.JUMPBOOST && !isGrounded)
                 {
-                    // Powerup jump should be slightly weaker
-                    float powerJumpForce = jumpForce * 0.7f;
-                    // Using "transform.up" here instead of "Vector3.up" ensures that the player can alter their jump trajectory with the powerup
-                    carRB.AddForce(transform.up * powerJumpForce, ForceMode.Impulse);
-                    UseItem();
-                    doubleJump?.Invoke();
+                    DoubleJumpHandler();
+                    sinceJumped = Time.time;
                 }
                 else if (isGrounded)
                 {
                     carRB.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+                    sinceJumped = Time.time;
                 }
                 else if (isWallRiding)
                 {
                     float upForce = (float)0.3 * jumpForce;
                     carRB.AddForce(carRB.transform.up * jumpForce, ForceMode.Impulse);
                     carRB.AddForce(Vector3.up * upForce, ForceMode.Impulse);
+                    sinceJumped = Time.time;
                 }
-                sinceJumped = Time.time;
             }
             else if (Time.time - sinceJumped > jumpBuffer)
             {
@@ -540,6 +494,77 @@ public class CarController : MonoBehaviour
         
     }
 
+    private void DoubleJumpHandler()
+    {
+        // Powerup jump should be slightly weaker
+        float powerJumpForce = jumpForce * 0.7f;
+        // Using "transform.up" here instead of "Vector3.up" ensures that the player can alter their jump trajectory with the powerup
+        carRB.AddForce(transform.up * powerJumpForce, ForceMode.Impulse);
+        UseItem();
+        doubleJump?.Invoke();
+    }
+
+    private void EndMagnetCheck()
+    {
+        // Allows for wall riding for the specified duration, detaching the player when the powerup runs out
+        if (Time.time - magnetTimer > magnetDuration && magnetTimer != 0f)
+        {
+            UseItem();
+            magnetTimer = 0f;
+            magnetised = false;
+            // Pushes the car lightly off the wall if attached
+            if (isWallRiding)
+            {
+                float releaseStrength = 0.3f * jumpForce;
+                carRB.AddForce(carRB.transform.up * releaseStrength, ForceMode.Impulse);
+                carRB.AddForce(Vector3.up * releaseStrength, ForceMode.Impulse);
+            }
+            ToggleVisualMagnets();
+        }
+    }
+
+    private void MagnetHandler(Transform rayPoint, RaycastHit hit, int index)
+    {
+
+        RaycastHit magnetiseHit;
+        if (Physics.Raycast(rayPoint.position, -rayPoint.up, out magnetiseHit, 3 * maxLength + wheelRadius, ridableWall))
+        {
+            magnetisedWheels[index] = 1;
+            if (wallAttraction && !magnetised)
+            {
+                carRB.AddForceAtPosition(350 * -rayPoint.up, rayPoint.position);
+            }
+        }
+
+        // Detects when the player magnetises to a wall
+        if (!magnetised && magnetTimer == 0f)
+        {
+            magnetised = true;
+            magnetTimer = Time.time;
+            wallRideBegin?.Invoke();
+            ToggleVisualMagnets();
+        }
+        wheelsOnWall[index] = 1;
+
+        // Here the suspension code needs to be altered
+        float currentSpringLength = hit.distance - wheelRadius;
+        float springCompression = restLength - currentSpringLength / springTravel;
+
+        float springVelocity = Vector3.Dot(carRB.GetPointVelocity(rayPoint.position), rayPoint.up);
+        float dampForce = damperStiffness * springVelocity;
+
+        float springForce = springStiffness * springCompression;
+
+        float netForce = springForce - dampForce;
+
+        carRB.AddForceAtPosition(netForce * rayPoint.up, rayPoint.position);
+        if (isWallRiding) // If the player is wall riding, attach them to the wall and give them a small boost
+        {
+            carRB.AddForceAtPosition(200 * -rayPoint.up, rayPoint.position);
+            carRB.AddForceAtPosition((acceleration * moveDirection.y * transform.forward), accelerationPoint.position, ForceMode.Impulse);
+        }
+    }
+
     #endregion
 
     #region Visuals
@@ -576,5 +601,12 @@ public class CarController : MonoBehaviour
         tire.transform.position = targetPosition;
     }
 
+    private void ToggleVisualMagnets()
+    {
+        foreach (GameObject magnet in carMagnets)
+        {
+            magnet.SetActive(!magnet.activeSelf);
+        }
+    }
     #endregion
 }
