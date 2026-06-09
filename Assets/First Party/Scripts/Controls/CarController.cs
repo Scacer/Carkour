@@ -14,12 +14,16 @@ public class CarController : MonoBehaviour
     [SerializeField] private Transform accelerationPoint;
     [SerializeField] private GameObject[] tires = new GameObject[4];
     [SerializeField] private GameObject[] frontTireParents = new GameObject[2];
+    [SerializeField] private TrailRenderer[] skidMarks = new TrailRenderer[2];
+    [SerializeField] private ParticleSystem[] skidSmokes = new ParticleSystem[2];
+    [SerializeField] private AudioSource engineSound, skidSound;
+
 
     [Header("Suspension Settings")]
     [SerializeField] private float damperStiffness; // Value used to represent damper fluid to prevent continuous bouncing
     [SerializeField] private float springStiffness; // The maximum force the spring can exert, occurring when fully compressed
     [SerializeField] private float restLength; // The standard length of our theoretical spring when at rest
-    private float maxLength; // Maximum length(?) consult video!!
+    private float maxLength;
     [SerializeField] private float springTravel; // The maximum distances the spring can either compress or extend from rest
     [SerializeField] private float wheelRadius;
 
@@ -96,6 +100,14 @@ public class CarController : MonoBehaviour
     [Header("Visuals")]
     [SerializeField] private float tireRotSpeed = 3000f;
     [SerializeField] private float maxSteeringAngle = 30f;
+    [SerializeField] private float minSideSkidVelocity = 10f;
+
+    // Audio
+    [Header("Audio")]
+    [SerializeField]
+    [Range(0, 1)] private float minPitch = 1f;
+    [SerializeField]
+    [Range(1, 5)] private float maxPitch = 5f;
 
     #region Unity Functions
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -147,6 +159,7 @@ public class CarController : MonoBehaviour
         CalculateCarVelocity();
         Movement();
         Visuals();
+        EngineSound();
         DiscardItemCheck();
     }
     #endregion
@@ -572,6 +585,7 @@ public class CarController : MonoBehaviour
     private void Visuals()
     {
         TireVisuals();
+        skidEffects();
     }
 
     private void TireVisuals()
@@ -608,5 +622,59 @@ public class CarController : MonoBehaviour
             magnet.SetActive(!magnet.activeSelf);
         }
     }
+
+    private void skidEffects()
+    {
+        if (isGrounded && Mathf.Abs(currentCarLocalVelocity.x) > minSideSkidVelocity)
+        {
+            ToggleSkidMarks(true);
+            ToggleSkidSmokes(true);
+            ToggleSkidSound(true);
+        }
+        else
+        {
+            ToggleSkidMarks(false);
+            ToggleSkidSmokes(false);
+            ToggleSkidSound(false);
+        }
+    }
+
+    private void ToggleSkidMarks(bool toggle)
+    {
+        foreach(var skidMark in skidMarks)
+        {
+            skidMark.emitting = toggle;
+        }
+    }
+
+    private void ToggleSkidSmokes(bool toggle)
+    {
+        foreach(var smoke in skidSmokes)
+        {
+            if (toggle)
+            {
+                smoke.Play();
+            }
+            else
+            {
+                smoke.Stop();
+            }
+        }
+    }
     #endregion
+
+    #region Audio
+
+    private void EngineSound()
+    {
+        engineSound.pitch = Mathf.Lerp(minPitch, maxPitch, Mathf.Abs(carVelocityRatio));
+    }
+
+    private void ToggleSkidSound(bool toggle)
+    {
+        skidSound.mute = !toggle;
+    }
+
+    #endregion
+
 }
