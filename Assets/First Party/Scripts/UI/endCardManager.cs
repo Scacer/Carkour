@@ -27,7 +27,6 @@ public class endCardManager : MonoBehaviour
 
     [Header("Control Pauses")]
     [SerializeField] private GameObject pauseMenu;
-    [SerializeField] GachaItem gachaItem;
     private bool isPaused = false;
     [SerializeField] private CarController carController;
     [SerializeField] private CinemachineInputAxisController camInput;

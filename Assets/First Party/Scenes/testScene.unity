@@ -2197,6 +2197,14 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1699148651}
     - target: {fileID: 8673310785324568048, guid: 090c83eebfbab454bbd0bb89466d9468, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8673310785324568048, guid: 090c83eebfbab454bbd0bb89466d9468, type: 3}
+      propertyPath: AvoidObstacles.DistanceLimit
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8673310785324568048, guid: 090c83eebfbab454bbd0bb89466d9468, type: 3}
       propertyPath: AvoidObstacles.UseFollowTarget.Enabled
       value: 1
       objectReference: {fileID: 0}
