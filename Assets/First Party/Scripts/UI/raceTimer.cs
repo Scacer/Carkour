@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using System;
+using UnityEngine.UI;
 
 public class raceTimer : MonoBehaviour
 {
     private bool _timerActive;
-    private float _currentTime;
+    public float currentTime;
     [SerializeField] private TMP_Text _text;
+    [SerializeField] private Image timerBack;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -27,24 +29,30 @@ public class raceTimer : MonoBehaviour
     {
         if (_timerActive)
         {
-            _currentTime += Time.deltaTime;
+            currentTime += Time.deltaTime;
         }
-        _text.text = _currentTime.ToString("n2");
+        _text.text = currentTime.ToString("n2");
         
     }
 
     public void ActivateTimer()
     {
         _timerActive = true;
+        _text.enabled = true;
+        timerBack.enabled = true;
     }
 
     public void DeactivateTimer()
     {
         _timerActive = false;
+        _text.enabled = false;
+        timerBack.enabled = false;
     }
 
     public void ResetTimer()
     {
-        _currentTime = 0;
+        currentTime = 0;
+        _text.enabled = false;
+        timerBack.enabled = false;
     }
 }
