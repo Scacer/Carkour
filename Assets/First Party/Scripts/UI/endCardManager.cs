@@ -2,6 +2,8 @@ using System.IO;
 using TMPro;
 using Unity.Cinemachine;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class endCardManager : MonoBehaviour
@@ -24,16 +26,30 @@ public class endCardManager : MonoBehaviour
     [SerializeField] private TMP_Text goldTime;
 
     [Header("Control Pauses")]
+    [SerializeField] private GameObject pauseMenu;
+    [SerializeField] GachaItem gachaItem;
+    private bool isPaused = false;
     [SerializeField] private CarController carController;
     [SerializeField] private CinemachineInputAxisController camInput;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        pauseMenu.SetActive(false);
+        enforceDirectory();
         endCard.SetActive(false);
         firstStar.enabled = false;
         secondStar.enabled = false;
         thirdStar.enabled = false;
+    }
+
+    public static void enforceDirectory()
+    {
+        string thisPath = Path.Combine(Application.persistentDataPath, "/levels");
+        if (!Directory.Exists(thisPath))
+        {
+            Directory.CreateDirectory(thisPath);
+        }
     }
 
     private void OnEnable()
@@ -44,10 +60,58 @@ public class endCardManager : MonoBehaviour
         RaceLine.ThreeStars += ThreeStars;
     }
 
+    private void OnDisable()
+    {
+        RaceLine.NoStar -= NoStars;
+        RaceLine.OneStar -= OneStar;
+        RaceLine.TwoStars -= TwoStars;
+        RaceLine.ThreeStars -= ThreeStars;
+    }
+
+    // Buttons
+    public void Hub()
+    {
+        SceneManager.LoadScene("city");
+    }
+
+    public void Retry()
+    {
+        string curScene = SceneManager.GetActiveScene().name;
+        Time.timeScale = 1.0f;
+        SceneManager.LoadScene(curScene);
+    }
+
     // Update is called once per frame
     void Update()
     {
-        
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            togglePause();
+        }
+    }
+
+    private void togglePause()
+    {
+        if (isPaused)
+        {
+            AudioListener.pause = false;
+            Time.timeScale = 1f;
+            pauseMenu.SetActive(false);
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+            isPaused = false;
+            
+        }
+        else
+        {
+            AudioListener.pause = true;
+            Time.timeScale = 0f;
+            pauseMenu.SetActive(true);
+            isPaused = true;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+            
     }
 
     private void handleWin()
@@ -99,8 +163,9 @@ public class endCardManager : MonoBehaviour
 
 
         string jsonData = JsonUtility.ToJson(curData);
-        string fileName = string.Format("{0}.json", levelName);
+        string fileName = string.Format("/levels/{0}.json", levelName);
         string path = Path.Combine(Application.persistentDataPath, fileName);
+        Debug.Log(path);
 
         int historicNumStars = getNumStars(levelName);
         float historicBestTime = getBestTime(levelName);
@@ -123,7 +188,6 @@ public class endCardManager : MonoBehaviour
         }
 
         File.WriteAllText(path, jsonData);
-        Debug.Log(Application.persistentDataPath);
 
         
 
@@ -134,7 +198,7 @@ public class endCardManager : MonoBehaviour
     // Returns the best number of stars for a specified level, returning -1 if no file is found
     public static int getNumStars(string lvlName)
     {
-        string fileName = string.Format("{0}.json", lvlName);
+        string fileName = string.Format("/levels/{0}.json", lvlName);
         string path = Path.Combine(Application.persistentDataPath, fileName);
 
         if (File.Exists(path))
@@ -153,7 +217,7 @@ public class endCardManager : MonoBehaviour
     // Returns the best time for a specified level, returning -1 if no file is found
     public static float getBestTime(string lvlName)
     {
-        string fileName = string.Format("{0}.json", lvlName);
+        string fileName = string.Format("/levels/{0}.json", lvlName);
         string path = Path.Combine(Application.persistentDataPath, fileName);
 
         if (File.Exists(path))
@@ -193,6 +257,12 @@ public class endCardManager : MonoBehaviour
         secondStar.enabled= true;
         thirdStar.enabled = true;
         handleWin();
+    }
+
+    public void Quit()
+    {
+        Debug.Log("Player has Quit the game.");
+        Application.Quit();
     }
 }
 

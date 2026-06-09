@@ -24,6 +24,12 @@ public class raceTimer : MonoBehaviour
         RaceLine.TimerStop += DeactivateTimer;
     }
 
+    void OnDisable()
+    {
+        RaceLine.TimerStart -= ActivateTimer;
+        RaceLine.TimerStop -= DeactivateTimer;
+    }
+
     // Update is called once per frame
     void Update()
     {

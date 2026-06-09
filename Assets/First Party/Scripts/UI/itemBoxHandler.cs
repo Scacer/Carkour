@@ -45,6 +45,15 @@ public class itemBoxHandler : MonoBehaviour
         
     }
 
+    private void OnDisable()
+    {
+        CarController.itemCollected -= loadPowerupIcons;
+        CarController.itemDiscarded -= discardItem;
+        CarController.itemUsed -= loadPowerupIcons;
+        CarController.doubleJump -= startJumpBoostTimer;
+        CarController.wallRideBegin -= startMagnetTimer;
+    }
+
     private void discardItem()
     {
         itemTimer.enabled = false;

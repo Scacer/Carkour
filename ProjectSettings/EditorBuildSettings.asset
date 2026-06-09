@@ -9,8 +9,8 @@ EditorBuildSettings:
     path: Assets/First Party/Scenes/mainMenu.unity
     guid: a1471eecb0e19934ba7ade128374e333
   - enabled: 1
-    path: Assets/First Party/Scenes/hubWorld.unity
-    guid: 9fc0d4010bbf28b4594072e72b8655ab
+    path: Assets/First Party/Scenes/city.unity
+    guid: bc8468828bca73f49bbe8ba3c339123a
   - enabled: 1
     path: Assets/First Party/Scenes/Toybox.unity
     guid: abb7dd0dd07d42b4bb3666db7870c8d9

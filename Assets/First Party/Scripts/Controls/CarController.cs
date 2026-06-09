@@ -143,6 +143,8 @@ public class CarController : MonoBehaviour
         jump.Disable();
         rotate.Disable();
         discardItem.Disable();
+        GachaItem.DoubleJumpCollected -= () => CollectItem(Powerup.JUMPBOOST);
+        GachaItem.MagnetCollected -= () => CollectItem(Powerup.MAGNET);
     }
 
     private void Update()
